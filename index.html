@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table to Markdown Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+
+        .converter-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 1.1rem;
+        }
+
+        .input-area {
+            width: 100%;
+            min-height: 300px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .input-area:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-area.drag-over {
+            border-color: #10b981;
+            background-color: #f0fdf4;
+        }
+
+        .output-area {
+            width: 100%;
+            min-height: 300px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            background: #1e293b;
+            color: #e2e8f0;
+            resize: vertical;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+        }
+
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        .checkbox-group label {
+            color: #475569;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .tips {
+            background: linear-gradient(135deg, #fef3c7, #fcd34d);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .tips h3 {
+            color: #92400e;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .tips ul {
+            color: #78350f;
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .tips li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .tips li::before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .status.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .status.success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .status.error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        @media (max-width: 768px) {
+            .converter-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Advanced Table to Markdown Converter</h1>
+            <p>Perfect for Doc as Code workflows - handles complex formatting, bullet lists, and nested content</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="convertTable()">
+                🔄 Convert to Markdown
+            </button>
+            <button class="btn btn-success" onclick="copyToClipboard()">
+                📋 Copy Result
+            </button>
+            <button class="btn btn-secondary" onclick="clearAll()">
+                🗑️ Clear All
+            </button>
+            
+            <div class="options">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="preserveFormatting" checked>
+                    <label for="preserveFormatting">Preserve inline formatting</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="compactMode">
+                    <label for="compactMode">Compact mode</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="converter-layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📝 Input (Paste your table here)</span>
+                </div>
+                <textarea 
+                    id="inputArea" 
+                    class="input-area" 
+                    placeholder="Paste your table content here from DITA, HTML, PDF, or any source...
+
+Examples of supported content:
+• Standard HTML tables (tr, td, th)
+• DITA tables (table, tgroup, entry)
+• Tables with bullet lists in cells
+• Tables with nested formatting
+• Rich text tables
+• Multi-line cell content
+
+Just paste and click Convert!"
+                ></textarea>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📄 Markdown Output</span>
+                </div>
+                <div id="outputArea" class="output-area"></div>
+            </div>
+        </div>
+
+        <div class="tips">
+            <h3>💡 Pro Tips for Technical Writers</h3>
+            <ul>
+                <li>Paste directly from Word, PDF, HTML pages, or DITA files</li>
+                <li>Full support for DITA table structure (table, tgroup, entry elements)</li>
+                <li>Bullet lists in cells are automatically converted to proper markdown syntax</li>
+                <li>Complex formatting like bold, italic, and code spans are preserved</li>
+                <li>Multi-line content in cells is handled correctly</li>
+                <li>Tables with irregular structures are normalized</li>
+                <li>Use "Preserve inline formatting" to keep **bold**, *italic*, and `code` styles</li>
+                <li>Enable "Compact mode" for tighter table spacing</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <script>
+        let convertedMarkdown = '';
+
+        function convertTable() {
+            const input = document.getElementById('inputArea').value.trim();
+            const preserveFormatting = document.getElementById('preserveFormatting').checked;
+            const compactMode = document.getElementById('compactMode').checked;
+            
+            if (!input) {
+                showStatus('Please paste some table content first!', 'error');
+                return;
+            }
+
+            try {
+                let rows = [];
+
+                // Check if this looks like DITA XML first
+                if (input.includes('<table') && (input.includes('<entry>') || input.includes('<tgroup>'))) {
+                    console.log('Detected DITA XML structure, using XML parser');
+                    rows = parseDITAXML(input, preserveFormatting);
+                } else {
+                    // Try HTML parsing
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = input;
+                    const table = tempDiv.querySelector('table');
+                    
+                    if (table) {
+                        console.log('Found HTML table element');
+                        rows = extractFromHTMLTable(table, preserveFormatting);
+                    } else {
+                        console.log('No table found, trying text parsing');
+                        rows = parseTextTable(input, preserveFormatting);
+                    }
+                }
+
+                console.log('Final extracted rows:', rows);
+
+                if (rows.length === 0) {
+                    showStatus('No table structure detected. Check console for debug info.', 'error');
+                    return;
+                }
+
+                // Convert to markdown
+                convertedMarkdown = generateMarkdownTable(rows, compactMode);
+                document.getElementById('outputArea').textContent = convertedMarkdown;
+                
+                showStatus('Table converted successfully!', 'success');
+            } catch (error) {
+                console.error('Conversion error:', error);
+                showStatus('Error converting table. Please check the input format.', 'error');
+            }
+        }
+
+        function parseDITAXML(xmlString, preserveFormatting) {
+            const rows = [];
+            
+            try {
+                // Use DOMParser to properly parse XML
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+                
+                // Check for parsing errors
+                const parserError = xmlDoc.querySelector('parsererror');
+                if (parserError) {
+                    console.log('XML parsing error, falling back to regex extraction');
+                    return extractDITAWithRegex(xmlString, preserveFormatting);
+                }
+                
+                const table = xmlDoc.querySelector('table');
+                if (!table) {
+                    console.log('No table element found in parsed XML');
+                    return rows;
+                }
+                
+                console.log('Successfully parsed DITA XML');
+                return extractFromDITATable(table, preserveFormatting);
+                
+            } catch (error) {
+                console.log('XML parsing failed, trying regex extraction:', error);
+                return extractDITAWithRegex(xmlString, preserveFormatting);
+            }
+        }
+
+        function extractDITAWithRegex(xmlString, preserveFormatting) {
+            const rows = [];
+            console.log('Using regex extraction for DITA');
+            
+            try {
+                // Extract all <entry> content using regex
+                const entryRegex = /<entry[^>]*>(.*?)<\/entry>/gs;
+                const rowRegex = /<row[^>]*>(.*?)<\/row>/gs;
+                
+                let rowMatch;
+                let rowIndex = 0;
+                
+                while ((rowMatch = rowRegex.exec(xmlString)) !== null) {
+                    const rowContent = rowMatch[1];
+                    console.log(`Processing row ${rowIndex}:`, rowContent);
+                    
+                    const rowData = [];
+                    let entryMatch;
+                    
+                    while ((entryMatch = entryRegex.exec(rowContent)) !== null) {
+                        let cellContent = entryMatch[1].trim();
+                        
+                        // Remove any remaining XML tags if not preserving formatting
+                        if (!preserveFormatting) {
+                            cellContent = cellContent.replace(/<[^>]*>/g, '');
+                        }
+                        
+                        cellContent = cellContent
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                        
+                        console.log('Extracted cell content:', cellContent);
+                        rowData.push(cellContent);
+                    }
+                    
+                    if (rowData.length > 0) {
+                        console.log('Adding row:', rowData);
+                        rows.push(rowData);
+                    }
+                    
+                    rowIndex++;
+                }
+                
+            } catch (error) {
+                console.error('Regex extraction error:', error);
+            }
+            
+            console.log('Regex extraction result:', rows);
+            return rows;
+        }
+
+        function extractFromHTMLTable(table, preserveFormatting) {
+            const rows = [];
+            
+            // Check if this is a DITA table structure
+            if (table.querySelector('tgroup')) {
+                return extractFromDITATable(table, preserveFormatting);
+            }
+            
+            // Standard HTML table processing
+            const tableRows = table.querySelectorAll('tr');
+            
+            tableRows.forEach(tr => {
+                const cells = tr.querySelectorAll('td, th');
+                const rowData = [];
+                
+                cells.forEach(cell => {
+                    let cellContent = '';
+                    
+                    if (preserveFormatting) {
+                        cellContent = processRichContent(cell);
+                    } else {
+                        cellContent = cell.textContent || cell.innerText || '';
+                    }
+                    
+                    // Clean up the content
+                    cellContent = cellContent
+                        .replace(/\s+/g, ' ')
+                        .replace(/\n\s*\n/g, '<br>')
+                        .trim();
+                    
+                    rowData.push(cellContent);
+                });
+                
+                if (rowData.length > 0) {
+                    rows.push(rowData);
+                }
+            });
+            
+            return rows;
+        }
+
+        function extractFromDITATable(table, preserveFormatting) {
+            const rows = [];
+            console.log('Processing DITA table:', table);
+            
+            // Process DITA table structure
+            const tgroup = table.querySelector('tgroup');
+            console.log('Found tgroup:', tgroup);
+            if (!tgroup) return rows;
+            
+            // Extract header rows from thead
+            const thead = tgroup.querySelector('thead');
+            console.log('Found thead:', thead);
+            if (thead) {
+                const headerRows = thead.querySelectorAll('row');
+                console.log('Found header rows:', headerRows.length);
+                headerRows.forEach(row => {
+                    const entries = row.querySelectorAll('entry');
+                    console.log('Found entries in header:', entries.length);
+                    const rowData = [];
+                    
+                    entries.forEach(entry => {
+                        let cellContent = '';
+                        
+                        if (preserveFormatting) {
+                            cellContent = processRichContent(entry);
+                        } else {
+                            cellContent = entry.textContent || entry.innerText || '';
+                        }
+                        
+                        cellContent = cellContent
+                            .replace(/\s+/g, ' ')
+                            .replace(/\n\s*\n/g, '<br>')
+                            .trim();
+                        
+                        console.log('Header cell content:', cellContent);
+                        rowData.push(cellContent);
+                    });
+                    
+                    if (rowData.length > 0) {
+                        console.log('Adding header row:', rowData);
+                        rows.push(rowData);
+                    }
+                });
+            }
+            
+            // Extract body rows from tbody
+            const tbody = tgroup.querySelector('tbody');
+            console.log('Found tbody:', tbody);
+            if (tbody) {
+                const bodyRows = tbody.querySelectorAll('row');
+                console.log('Found body rows:', bodyRows.length);
+                bodyRows.forEach(row => {
+                    const entries = row.querySelectorAll('entry');
+                    console.log('Found entries in body row:', entries.length);
+                    const rowData = [];
+                    
+                    entries.forEach(entry => {
+                        let cellContent = '';
+                        
+                        if (preserveFormatting) {
+                            cellContent = processRichContent(entry);
+                        } else {
+                            cellContent = entry.textContent || entry.innerText || '';
+                        }
+                        
+                        cellContent = cellContent
+                            .replace(/\s+/g, ' ')
+                            .replace(/\n\s*\n/g, '<br>')
+                            .trim();
+                        
+                        console.log('Body cell content:', cellContent);
+                        rowData.push(cellContent);
+                    });
+                    
+                    if (rowData.length > 0) {
+                        console.log('Adding body row:', rowData);
+                        rows.push(rowData);
+                    }
+                });
+            }
+            
+            console.log('Final DITA rows:', rows);
+            return rows;
+        }
+
+        function processRichContent(element) {
+            let content = '';
+            
+            for (let node of element.childNodes) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    content += node.textContent;
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tagName = node.tagName.toLowerCase();
+                    const innerContent = processRichContent(node);
+                    
+                    switch (tagName) {
+                        case 'strong':
+                        case 'b':
+                            content += `**${innerContent}**`;
+                            break;
+                        case 'em':
+                        case 'i':
+                            content += `*${innerContent}*`;
+                            break;
+                        case 'code':
+                            content += `\`${innerContent}\``;
+                            break;
+                        case 'br':
+                            content += '<br>';
+                            break;
+                        case 'ul':
+                        case 'ol':
+                            content += processList(node);
+                            break;
+                        case 'p':
+                            content += innerContent + '<br>';
+                            break;
+                        case 'a':
+                            const href = node.getAttribute('href');
+                            if (href) {
+                                content += `[${innerContent}](${href})`;
+                            } else {
+                                content += innerContent;
+                            }
+                            break;
+                        default:
+                            content += innerContent;
+                    }
+                }
+            }
+            
+            return content;
+        }
+
+        function processList(listElement) {
+            const items = listElement.querySelectorAll('li');
+            const isOrdered = listElement.tagName.toLowerCase() === 'ol';
+            let listContent = '<br>';
+            
+            items.forEach((item, index) => {
+                const marker = isOrdered ? `${index + 1}.` : '•';
+                const itemContent = processRichContent(item).replace(/<br>/g, ' ').trim();
+                listContent += `${marker} ${itemContent}<br>`;
+            });
+            
+            return listContent;
+        }
+
+        function parseTextTable(input, preserveFormatting) {
+            const lines = input.split('\n').filter(line => line.trim());
+            const rows = [];
+            
+            // Try to detect table structure by looking for common patterns
+            for (let line of lines) {
+                // Skip obvious non-table lines
+                if (line.trim().match(/^[-=+\s|]*$/)) continue;
+                
+                // Split by tabs or multiple spaces or pipes
+                let cells = [];
+                
+                if (line.includes('\t')) {
+                    cells = line.split('\t');
+                } else if (line.includes('|')) {
+                    cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+                } else {
+                    // Try to split by multiple spaces (2 or more)
+                    cells = line.split(/\s{2,}/).filter(cell => cell.trim());
+                }
+                
+                // Clean up cells
+                if (cells.length > 1) {
+                    cells = cells.map(cell => {
+                        let cleaned = cell.trim();
+                        
+                        if (preserveFormatting) {
+                            // Convert simple text formatting
+                            cleaned = cleaned
+                                .replace(/\*\*(.+?)\*\*/g, '**$1**') // bold
+                                .replace(/\*(.+?)\*/g, '*$1*')       // italic
+                                .replace(/`(.+?)`/g, '`$1`');       // code
+                        }
+                        
+                        return cleaned;
+                    });
+                    
+                    rows.push(cells);
+                }
+            }
+            
+            return rows;
+        }
+
+        function generateMarkdownTable(rows, compactMode) {
+            if (rows.length === 0) return '';
+            
+            // Ensure all rows have the same number of columns
+            const maxCols = Math.max(...rows.map(row => row.length));
+            const normalizedRows = rows.map(row => {
+                while (row.length < maxCols) {
+                    row.push('');
+                }
+                return row;
+            });
+            
+            // Calculate column widths for better formatting
+            const colWidths = [];
+            for (let i = 0; i < maxCols; i++) {
+                let maxWidth = 0;
+                normalizedRows.forEach(row => {
+                    const cellContent = (row[i] || '').replace(/<br>/g, ' ');
+                    maxWidth = Math.max(maxWidth, cellContent.length);
+                });
+                colWidths.push(Math.max(maxWidth, 3)); // Minimum width of 3
+            }
+            
+            let markdown = '';
+            
+            normalizedRows.forEach((row, rowIndex) => {
+                // Process each row
+                const cells = row.map((cell, cellIndex) => {
+                    let processedCell = (cell || '').trim();
+                    
+                    // Handle line breaks in cells
+                    if (processedCell.includes('<br>')) {
+                        processedCell = processedCell.replace(/<br>/g, compactMode ? ' | ' : ' <br> ');
+                    }
+                    
+                    // Escape pipe characters in content
+                    processedCell = processedCell.replace(/\|/g, '\\|');
+                    
+                    // Pad cell content for alignment (unless compact mode)
+                    if (!compactMode && colWidths[cellIndex] > processedCell.length) {
+                        processedCell = processedCell.padEnd(colWidths[cellIndex]);
+                    }
+                    
+                    return processedCell;
+                });
+                
+                markdown += '| ' + cells.join(' | ') + ' |\n';
+                
+                // Add separator after first row (header)
+                if (rowIndex === 0) {
+                    const separator = colWidths.map(width => 
+                        compactMode ? '---' : '-'.repeat(Math.max(width, 3))
+                    );
+                    markdown += '| ' + separator.join(' | ') + ' |\n';
+                }
+            });
+            
+            return markdown;
+        }
+
+        function copyToClipboard() {
+            if (!convertedMarkdown) {
+                showStatus('No markdown to copy. Convert a table first!', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(convertedMarkdown).then(() => {
+                showStatus('Markdown copied to clipboard!', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = convertedMarkdown;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showStatus('Markdown copied to clipboard!', 'success');
+            });
+        }
+
+        function clearAll() {
+            document.getElementById('inputArea').value = '';
+            document.getElementById('outputArea').textContent = '';
+            convertedMarkdown = '';
+            showStatus('All content cleared!', 'success');
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type} show`;
+            
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 3000);
+        }
+
+        // Auto-convert when user stops typing
+        let typingTimer;
+        document.getElementById('inputArea').addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                if (document.getElementById('inputArea').value.trim()) {
+                    convertTable();
+                }
+            }, 1000);
+        });
+
+        // Handle paste events for better UX
+        document.getElementById('inputArea').addEventListener('paste', (e) => {
+            setTimeout(() => {
+                convertTable();
+            }, 100);
+        });
+
+        // Drag and drop support
+        const inputArea = document.getElementById('inputArea');
+        
+        inputArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            inputArea.classList.add('drag-over');
+        });
+        
+        inputArea.addEventListener('dragleave', () => {
+            inputArea.classList.remove('drag-over');
+        });
+        
+        inputArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            inputArea.classList.remove('drag-over');
+            
+            const items = e.dataTransfer.items;
+            for (let item of items) {
+                if (item.kind === 'string' && item.type === 'text/html') {
+                    item.getAsString((data) => {
+                        inputArea.value = data;
+                        convertTable();
+                    });
+                    break;
+                } else if (item.kind === 'string' && item.type === 'text/plain') {
+                    item.getAsString((data) => {
+                        inputArea.value = data;
+                        convertTable();
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
